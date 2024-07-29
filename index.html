@@ -1,1 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avalie Nossa Empresa</title>
+    <style>
+        /* Seu CSS aqui */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Avalie Nossa Empresa</h2>
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <form id="review-form">
+            <!-- Seu formulário aqui -->
+        </form>
+    </div>
+    <script>
+        async function generateReview() {
+            const services = Array.from(document.querySelectorAll('input[name="service"]:checked'))
+                .map(checkbox => {
+                    const quantity = checkbox.nextElementSibling ? checkbox.nextElementSibling.value : 1;
+                    const serviceType = checkbox.value.toLowerCase() + (quantity > 1 ? 's' : '');
+                    return `${quantity} ${serviceType}`;
+                });
 
+            const film = document.querySelector('input[name="film"]:checked').value;
+            const positivePoints = Array.from(document.querySelectorAll('input[name="positive_points"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            const userInput = `
+                Serviços: ${services.join(', ')}
+                Tipo de película: ${film}
+                Pontos positivos: ${positivePoints.join(', ')}
+            `;
+
+            try {
+                const response = await fetch('https://api.github.com/repos/<seu-usuario>/<repositorio-privado>/dispatches', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': 'token <seu-token-github>',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        event_type: 'generate_review',
+                        client_payload: { userInput }
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Requisição enviada com sucesso. Aguarde alguns segundos e recarregue a página para ver a avaliação gerada.');
+                } else {
+                    alert('Erro ao enviar requisição.');
+                }
+            } catch (error) {
+                console.error('Erro ao enviar requisição:', error);
+            }
+        }
+    </script>
+</body>
+</html>
