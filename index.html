@@ -15,11 +15,145 @@
             <div class="progress-bar" id="progress-bar"></div>
         </div>
         <form id="review-form">
-            <!-- Seu formulário aqui -->
+            <div id="step1" class="step active">
+                <p>Selecione os serviços que você recebeu:</p>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="service" value="Janela"> Janela
+                        <input type="number" class="counter" name="janela_quantity" min="1" max="10" value="1" style="display: none;">
+                    </label>
+                    <label>
+                        <input type="checkbox" name="service" value="Porta"> Porta
+                        <input type="number" class="counter" name="porta_quantity" min="1" max="10" value="1" style="display: none;">
+                    </label>
+                    <label>
+                        <input type="checkbox" name="service" value="Teto de vidro"> Teto de vidro
+                    </label>
+                    <label>
+                        <input type="checkbox" name="service" value="Sacada"> Sacada
+                    </label>
+                    <label>
+                        <input type="checkbox" name="service" value="Cortina de Vidro"> Cortina de Vidro
+                    </label>
+                    <label>
+                        <input type="checkbox" name="service" value="Box"> Box
+                        <input type="number" class="counter" name="box_quantity" min="1" max="10" value="1" style="display: none;">
+                    </label>
+                </div>
+                <button type="button" onclick="nextStep()">Próximo</button>
+            </div>
+            <div id="step2" class="step">
+                <p>Selecione o tipo de película:</p>
+                <div class="form-group">
+                    <label><input type="radio" name="film" value="Blackout"> Blackout</label>
+                    <label><input type="radio" name="film" value="Jateada"> Jateada</label>
+                    <label><input type="radio" name="film" value="Espelhada"> Espelhada</label>
+                    <label><input type="radio" name="film" value="Segurança"> Segurança</label>
+                    <label><input type="radio" name="film" value="Fume"> Fume</label>
+                </div>
+                <button type="button" onclick="prevStep()">Anterior</button>
+                <button type="button" onclick="nextStep()">Próximo</button>
+            </div>
+            <div id="step3" class="step">
+                <p>Selecione os pontos positivos que você gostaria de destacar na avaliação:</p>
+                <div class="form-group">
+                    <label><input type="checkbox" name="positive_points" value="Serviço de qualidade"> Serviço de qualidade</label>
+                    <label><input type="checkbox" name="positive_points" value="Chegou no horário"> Chegou no horário</label>
+                    <label><input type="checkbox" name="positive_points" value="Profissionais atenciosos"> Profissionais atenciosos</label>
+                    <label><input type="checkbox" name="positive_points" value="Resultado excepcional"> Resultado excepcional</label>
+                </div>
+                <button type="button" onclick="prevStep()">Anterior</button>
+                <button type="button" onclick="generateReview()">Gerar Avaliação</button>
+            </div>
+            <div id="step4" class="step review-output-container">
+                <p>Sua avaliação gerada:</p>
+                <textarea id="output" class="review-output" rows="10" readonly></textarea>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="button" onclick="prevStep()">Editar</button>
+                    <button type="button" onclick="copyAndOpenLink()">Copiar e Avaliar</button>
+                </div>
+                <div id="preloader"></div>
+            </div>
         </form>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+
+        document.querySelectorAll('input[name="service"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const counter = this.nextElementSibling;
+                if (counter && (this.value === 'Janela' || this.value === 'Porta' || this.value === 'Box')) {
+                    counter.style.display = this.checked ? 'inline-block' : 'none';
+                }
+            });
+        });
+
+        function updateProgressBar() {
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = `${((currentStep - 1) / (totalSteps - 1)) * 100}%`;
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps && validateStep()) {
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                currentStep++;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                updateProgressBar();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                currentStep--;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                updateProgressBar();
+            }
+        }
+
+        function validateStep() {
+            switch (currentStep) {
+                case 1:
+                    return validateServices();
+                case 2:
+                    return validateFilm();
+                case 3:
+                    return validatePositivePoints();
+                default:
+                    return true;
+            }
+        }
+
+        function validateServices() {
+            const services = document.querySelectorAll('input[name="service"]:checked');
+            if (services.length === 0) {
+                alert("Por favor, selecione pelo menos um serviço.");
+                return false;
+            }
+            return true;
+        }
+
+        function validateFilm() {
+            const film = document.querySelector('input[name="film"]:checked');
+            if (!film) {
+                alert("Por favor, selecione o tipo de película.");
+                return false;
+            }
+            return true;
+        }
+
+        function validatePositivePoints() {
+            const positivePoints = document.querySelectorAll('input[name="positive_points"]:checked');
+            if (positivePoints.length === 0) {
+                alert("Por favor, selecione pelo menos um ponto positivo.");
+                return false;
+            }
+            return true;
+        }
+
         async function generateReview() {
             const services = Array.from(document.querySelectorAll('input[name="service"]:checked'))
                 .map(checkbox => {
@@ -46,7 +180,7 @@
                     method: 'PUT',
                     headers: {
                         'Accept': 'application/vnd.github.v3+json',
-                        'Authorization': 'token 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',
+                        'Authorization': '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',
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -66,7 +200,18 @@
             }
         }
 
-        // Função para codificar em Base64
+        function copyAndOpenLink() {
+            const textarea = document.getElementById("output");
+            textarea.select();
+            document.execCommand("copy");
+
+            setTimeout(() => {
+                window.open("https://g.page/r/Ca0B0lo4FAFiEAI/review", "_blank");
+            }, 1000);
+        }
+
+        updateProgressBar();
+
         function btoa(input) {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
             let str = input;
